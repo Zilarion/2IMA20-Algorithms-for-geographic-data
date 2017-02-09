@@ -1,3 +1,11 @@
+# osx files
+**/*.DS_Store
+
+# data files
+data/*.csv
+
+
+
 *.class
 
 # Log file
