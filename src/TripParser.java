@@ -2,6 +2,7 @@ import core.Location;
 import core.SpaceTimeCube;
 import core.Trip;
 
+import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -37,7 +38,6 @@ public class TripParser implements TripListener {
 
     public void run() {
         CSVReader.parse("./data/yellow_tripdata_2016-01.csv", this);
-
     }
 
     private int[] cubeMap(Location location, Date time) throws IllegalArgumentException {
@@ -58,9 +58,32 @@ public class TripParser implements TripListener {
         return loc;
     }
 
+    public void writeJson() {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream("results.json"), "utf-8"))) {
+            writer.write("{");
+            for (int z = 0; z < zSize; z++) {
+                long time = (long) (timeDelta * z + timeDmin);
+                writer.write("\"" + time + "\": [");
+                for (int x = 0; x < xSize; x++) {
+                    for (int y = 0; y < ySize; y++) {
+                        float value = stc.get(x,y,z);
+                        writer.write(value + (xSize-1 == x && ySize-1 == y ? "" : ","));
+                    }
+                }
+                writer.write("]" + (zSize - 1 == z ? "" : ","));
+            }
+            writer.write("}");
+
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
+    }
+
     @Override
     public void done() {
-        stc.max();
+        System.out.println("Writing results...");
+        writeJson();
     }
 
     @Override
