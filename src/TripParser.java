@@ -13,7 +13,7 @@ import java.util.Date;
 public class TripParser implements TripListener {
     private int count = 0;
     private SpaceTimeCube stc;
-    private double latMin = 40.5, latMax = 40.9, lonMin = -73.7, lonMax = -74.25;
+    private double latMin = 40.9, latMax = 40.5, lonMin = -74.25, lonMax = -73.7;
     private long timeDmin, timeDmax;
     private String timeMin = "01/01/2016", timeMax = "31/01/2016";
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
