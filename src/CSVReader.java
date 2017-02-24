@@ -1,3 +1,5 @@
+import core.Trip;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -31,11 +33,17 @@ public class CSVReader {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        done();
     }
 
     public static void listen(TripListener s) {
         listeners.add(s);
+    }
+
+    private static void done() {
+        for (TripListener tl : listeners) {
+            tl.done();
+        }
     }
 
     private static void broadcast(Trip t) {

@@ -1,29 +1,30 @@
+package core;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 
 /**
  * Created by ruudandriessen on 21/02/2017.
  */
 public class Trip {
-    int VendorID;
-    Date pickup_datetime;
-    Date dropoff_datetime;
-    int passenger_count;
-    double trip_distance;
-    Location pickup_location;
-    int RatecodeID;
-    boolean store_and_fwd_flag;
-    Location dropoff_location;
+    public int VendorID;
+    public Date pickup_datetime;
+    public Date dropoff_datetime;
+    public int passenger_count;
+    public double trip_distance;
+    public Location pickup_location;
+    public int RatecodeID;
+    public boolean store_and_fwd_flag;
+    public Location dropoff_location;
     String payment_type;
-    double fare_amount;
-    double extra;
-    double mta_tax;
-    double tip_amount;
-    double tolls_amount;
-    double improvement_surcharge;
-    double total_amount;
+    public double fare_amount;
+    public double extra;
+    public double mta_tax;
+    public double tip_amount;
+    public double tolls_amount;
+    public double improvement_surcharge;
+    public double total_amount;
 
     public Trip(String[] data) {
         SimpleDateFormat sdf =  new SimpleDateFormat("yyyy-mm-dd hh:mm:ss");
