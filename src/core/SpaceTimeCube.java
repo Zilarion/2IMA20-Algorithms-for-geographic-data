@@ -28,12 +28,12 @@ public class SpaceTimeCube {
         return get(location[0], location[1], location[2]);
     }
 
-    public void increment(int x, int y, int z) {
-        cube[x][y][z]++;
+    public void increment(int x, int y, int z, float value) {
+        cube[x][y][z] += value;
     }
 
-    public void increment(int[] location) {
-        increment(location[0], location[1], location[2]);
+    public void increment(int[] location, float value) {
+        increment(location[0], location[1], location[2], value);
     }
 
     public void max() {

@@ -107,7 +107,7 @@ public class TripParser implements TripListener {
             return;
         }
 
-        stc.increment(pickupTile);
-        stc.increment(pickupTile);
+        stc.increment(pickupTile, -1);
+        stc.increment(dropoffTile, 1);
     }
 }

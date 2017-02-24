@@ -2,22 +2,28 @@
 
 // Create the Google Map…
 const map = new google.maps.Map(d3.select("#map").node(), {
-    zoom: 11,
+    zoom: 12,
     center: new google.maps.LatLng(40.7, -73.975),
     mapTypeId: google.maps.MapTypeId.TERRAIN
 });
 
+
+const overlay = new google.maps.OverlayView();
+const select = document.getElementById("timeselect");
 
 // Top left: [40,9, -74.25]
 // Bottom right: [40.5, -73.7]
 d3.json("results.json", function(error, data) {
     if (error) throw error;
 
-    const value = data["1451602800000"];
+    for (let key in data) {
+        let option = document.createElement("option");
+        option.text = key;
+        select.add(option);
+    }
 
-    const overlay = new google.maps.OverlayView();
     overlay.draw = function () {
-
+        const value = data[select.value];
         d3.selectAll(".gridOverlay").remove();
         const layer = d3.select(this.getPanes().overlayLayer).append("div")
             .attr("class", "gridOverlay");
@@ -73,7 +79,6 @@ d3.json("results.json", function(error, data) {
             topLeft = projection.fromLatLngToDivPixel(topLeft);
             bottomRight = projection.fromLatLngToDivPixel(bottomRight);
 
-            // console.log(topLeft, bottomRight);
             return d3.select(this)
                 .style("left", (topLeft.x) + "px")
                 .style("top", (topLeft.y) + "px")
@@ -82,7 +87,7 @@ d3.json("results.json", function(error, data) {
         }
 
         function transformTile(d) {
-            let color = d3.scale.pow().domain([0,1000]).range(["green", "red"]);
+            let color = d3.scale.linear().domain([-2000,0, 400]).range(["green", "grey", "red"]);
             let topLeft = new google.maps.LatLng(d.lat, d.lon);
             let bottomRight = new google.maps.LatLng(d.lat + deltaLat, d.lon + deltaLon);
 
@@ -93,8 +98,7 @@ d3.json("results.json", function(error, data) {
                 .append("text")
                 .text(d.value)
                 .style("fill", "white")
-                .style("position", "relative")
-                // .style("font-size", "70%")
+                .style("opacity", 0.6)
                 .attr({
                     "x": "50%",
                     "y": "50%",
@@ -107,9 +111,14 @@ d3.json("results.json", function(error, data) {
                 .style("top", (topLeft.y) + "px")
                 .style("width", (bottomRight.x - topLeft.x) + "px")
                 .style("height", (bottomRight.y - topLeft.y) + "px")
-                .style("opacity", 0.5)
+                .style("opacity", 0.3)
                 .style("background-color", color(d.value));
         }
     };
     overlay.setMap(map);
-})
+});
+
+
+function timeChange() {
+    overlay.draw()
+}
