@@ -10,22 +10,28 @@ import java.util.Date;
 /**
  * Created by ruudandriessen on 21/02/2017.
  */
-public class TripParser implements TripListener {
+public class GetisOrdComputer implements TripListener {
     private int count = 0;
-    private SpaceTimeCube stc;
+
+
+    private SpaceTimeCube<GetisOrdData> stc;
     private double latMin = 40.9, latMax = 40.5, lonMin = -74.25, lonMax = -73.7;
     private long timeDmin, timeDmax;
-    private String timeMin = "01/01/2016", timeMax = "31/01/2016";
-    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
+    // Date format
+    private SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
     private double lonDelta, latDelta, timeDelta;
     private int xSize = 50, ySize = 50, zSize = 50;
 
-    TripParser() {
-        // Parse location
+    GetisOrdComputer() {
+        // Define bounds of the data
+        String timeMin = "01/01/2016", timeMax = "31/01/2016";
+
+        // Parse location delta
         latDelta = (latMax - latMin)/xSize;
         lonDelta = (lonMax - lonMin)/ySize;
 
-        // Parse time
+        // Parse time delta
         try {
             timeDmin = sdf.parse(timeMin).getTime();
             timeDmax = sdf.parse(timeMax).getTime();
@@ -33,11 +39,16 @@ public class TripParser implements TripListener {
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        stc = new SpaceTimeCube(xSize, ySize, zSize);
-    }
 
-    public void run() {
-        CSVReader.parse("./data/yellow_tripdata_2016-01.csv", this);
+        // Create empty STC
+        stc = new SpaceTimeCube<>(xSize, ySize, zSize);
+        for (int x = 0; x < xSize; x++) {
+            for (int y = 0; y < ySize; y++) {
+                for (int z = 0; z < zSize; z++) {
+                    stc.set(x, y, z, new GetisOrdData());
+                }
+            }
+        }
     }
 
     private int[] cubeMap(Location location, Date time) throws IllegalArgumentException {
@@ -58,7 +69,7 @@ public class TripParser implements TripListener {
         return loc;
     }
 
-    public void writeJson() {
+    private void writeJson() {
         try (Writer writer = new BufferedWriter(new OutputStreamWriter(
                 new FileOutputStream("results.json"), "utf-8"))) {
             writer.write("{");
@@ -67,7 +78,7 @@ public class TripParser implements TripListener {
                 writer.write("\"" + time + "\": [");
                 for (int x = 0; x < xSize; x++) {
                     for (int y = 0; y < ySize; y++) {
-                        float value = stc.get(x,y,z);
+                        GetisOrdData value = stc.get(x,y,z);
                         writer.write(value + (xSize-1 == x && ySize-1 == y ? "" : ","));
                     }
                 }
@@ -82,8 +93,52 @@ public class TripParser implements TripListener {
 
     @Override
     public void done() {
-        System.out.println("Writing results...");
-        writeJson();
+        // Computing getis ord
+        System.out.println("Computing Getis-Ord statistic");
+        double[] G = new double[xSize*ySize*zSize];
+
+        double sumXj = 0;
+        double sumXj2 = 0;
+        double sumWijXj = 0;
+        int sumWij = 27;
+        int sumWij2 = 27;
+        int n = (xSize * ySize * zSize);
+        for (int x = 0; x < xSize; x++) {
+            for (int y = 0; y < ySize; y++) {
+                for (int z = 0; z < zSize; z++) {
+                    GetisOrdData god = stc.get(x, y, z);
+                    sumXj += god.x;
+                    sumXj2 += (god.x * god.x);
+                }
+            }
+        }
+        double xbar = sumXj/n;
+        double S = Math.sqrt(sumXj2/n - xbar * xbar);
+
+
+        for (int x = 0; x < xSize; x++) {
+            for (int y = 0; y < ySize; y++) {
+                for (int z = 0; z < zSize; z++) {
+                    // calculate sumwij2
+                    for (int xp = Math.max(0, x-1); xp < Math.min(xSize, x+1); xp++) {
+                        for (int yp = Math.max(0, y-1); yp < Math.min(ySize, y+1); yp++) {
+                            for (int zp = Math.max(0, z-1); zp < Math.min(zSize, z+1); zp++) {
+                                sumWijXj += stc.get(xp, yp, zp).x;
+                            }
+                        }
+                    }
+
+                    double above = sumWijXj - xbar * sumWij;
+                    double below = S * Math.sqrt( (n * sumWij2 - sumWij*sumWij ) / (n-1) );
+
+                    G[x + xSize * y + (xSize * ySize) * z] = above / below;
+                }
+            }
+        }
+
+        System.out.println(G);
+//        System.out.println("Writing results...");
+//        writeJson();
     }
 
     @Override
@@ -93,6 +148,7 @@ public class TripParser implements TripListener {
         if (count % 100000 == 0) {
             System.out.println(count);
         }
+
         int[] pickupTile, dropoffTile;
         try {
             // Try to find the location
@@ -104,10 +160,16 @@ public class TripParser implements TripListener {
             Location dropoff = t.dropoff_location;
             dropoffTile = cubeMap(dropoff, dropoff_time);
         } catch (IllegalArgumentException e ) {
+            // Trip has invalid data
             return;
         }
 
-        stc.increment(pickupTile, -1);
-        stc.increment(dropoffTile, 1);
+        // Get the current data
+        GetisOrdData pickupData = stc.get(pickupTile);
+        GetisOrdData dropOffData = stc.get(dropoffTile);
+
+        // Update according to the new trip
+        pickupData.x++;
+        dropOffData.x++;
     }
 }
