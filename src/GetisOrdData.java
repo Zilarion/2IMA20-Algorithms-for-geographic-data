@@ -3,8 +3,10 @@
  */
 public class GetisOrdData {
     int x;
+    double g;
 
     GetisOrdData() {
         x = 0;
+        g = 0;
     }
 }

@@ -79,7 +79,7 @@ public class GetisOrdComputer implements TripListener {
                 for (int x = 0; x < xSize; x++) {
                     for (int y = 0; y < ySize; y++) {
                         GetisOrdData value = stc.get(x,y,z);
-                        writer.write(value + (xSize-1 == x && ySize-1 == y ? "" : ","));
+                        writer.write(value.g + (xSize-1 == x && ySize-1 == y ? "" : ","));
                     }
                 }
                 writer.write("]" + (zSize - 1 == z ? "" : ","));
@@ -96,6 +96,8 @@ public class GetisOrdComputer implements TripListener {
         // Computing getis ord
         System.out.println("Computing Getis-Ord statistic");
         double[] G = new double[xSize*ySize*zSize];
+        double max = 0;
+        double min = 10000000;
 
         double sumXj = 0;
         double sumXj2 = 0;
@@ -131,14 +133,16 @@ public class GetisOrdComputer implements TripListener {
                     double above = sumWijXj - xbar * sumWij;
                     double below = S * Math.sqrt( (n * sumWij2 - sumWij*sumWij ) / (n-1) );
 
-                    G[x + xSize * y + (xSize * ySize) * z] = above / below;
+                    int index = x + xSize * y + (xSize * ySize) * z;
+                    stc.get(x, y, z).g = above / below;
                 }
             }
         }
 
-        System.out.println(G);
+//        System.out.println("min: " + min);
+//        System.out.println("max: " + max);
 //        System.out.println("Writing results...");
-//        writeJson();
+        writeJson();
     }
 
     @Override
