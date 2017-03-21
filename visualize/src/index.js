@@ -87,7 +87,7 @@ d3.json("results.json", function(error, data) {
         }
 
         function transformTile(d) {
-            let color = d3.scale.linear().domain([-2000,0, 400]).range(["green", "grey", "red"]);
+            let color = d3.scale.linear().domain([-3,0, 8]).range(["green", "grey", "red"]);
             let topLeft = new google.maps.LatLng(d.lat, d.lon);
             let bottomRight = new google.maps.LatLng(d.lat + deltaLat, d.lon + deltaLon);
 

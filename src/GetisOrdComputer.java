@@ -122,6 +122,7 @@ public class GetisOrdComputer implements TripListener {
             for (int y = 0; y < ySize; y++) {
                 for (int z = 0; z < zSize; z++) {
                     // calculate sumwij2
+                    sumWijXj = 0;
                     for (int xp = Math.max(0, x-1); xp < Math.min(xSize, x+1); xp++) {
                         for (int yp = Math.max(0, y-1); yp < Math.min(ySize, y+1); yp++) {
                             for (int zp = Math.max(0, z-1); zp < Math.min(zSize, z+1); zp++) {
