@@ -42,7 +42,7 @@ window.initMap = function() {
             });
             this.points = pt_arr;
 
-            this.qt = generate_quadtree_map(this.svg, this.points, proj);
+            this.qt = generate_quadtree_map(this.map, this.svg, this.points, proj);
 
             this.onPan();
             document.body.appendChild(this.svg);
@@ -51,6 +51,7 @@ window.initMap = function() {
 
         SVGOverlay.prototype.onPan = function () {
             let proj = this.getProjection();
+			this.qt = generate_quadtree_map(this.map, this.svg, this.points, proj);
             redraw_qt(this.svg, this.qt, proj, this.points);
         };
 
@@ -62,7 +63,7 @@ window.initMap = function() {
 
         SVGOverlay.prototype.draw = function () {
             let proj = this.getProjection();
-            this.qt = generate_quadtree_map(this.svg, this.points, proj);
+            this.qt = generate_quadtree_map(this.map, this.svg, this.points, proj);
         };
 
         // Create the Google Map…
@@ -80,10 +81,22 @@ function transformXY(proj, x, y) {
     return proj.fromLatLngToContainerPixel(new google.maps.LatLng(x, y));
 }
 
-function generate_quadtree_map(svg, pt_arr, proj) {
+function generate_quadtree_map(map, svg, pt_arr, proj) {
     quadtree = d3.geom.quadtree(pt_arr);
+	
+	const bounds = map.getBounds();
+	const quads = [];
+	nodes(quadtree).forEach(function(n) {
+		if (bounds.getSouthWest().lng() <= n.y &&
+			bounds.getNorthEast().lng() >= n.y &&
+			bounds.getSouthWest().lat() <= n.x &&
+			bounds.getNorthEast().lat() >= n.x &&
+			n.depth >= 0.6*quadtree.max_depth) {
+				quads.push(n);
+			}
+	});
 
-    const this_quadtree = nodes(quadtree);
+    const this_quadtree = quads;
 
     d3.select(svg)
         .selectAll("*").remove();
@@ -129,7 +142,7 @@ function generate_quadtree_map(svg, pt_arr, proj) {
         .style("position", "absolute")
         .attr('fill-opacity', function (d) {
             // return 0.3;
-            return (d.depth / quadtree.max_depth);
+			return (d.depth / quadtree.max_depth);
         })
         // .style("fill", (d) => (d.pts || d.is_leaf) ? col(d.depth) : "none")
         .style("fill", (d) => col(d.depth))
