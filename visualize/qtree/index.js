@@ -89,14 +89,6 @@ function generate_quadtree_map(svg, pt_arr, proj) {
 
     const this_quadtree = nodes(quadtree);
 
-    // const this_min = d3.min(this_quadtree, function (d) {
-    //     if (d.pts) return +d.width;
-    // });
-    // const this_max = d3.max(this_quadtree, function (d) {
-    //     if (d.pts) return +d.width;
-    // });
-
-
     d3.select(svg)
         .selectAll("*").remove();
 
@@ -115,31 +107,45 @@ function generate_quadtree_map(svg, pt_arr, proj) {
         .selectAll(".node")
         .data(this_quadtree);
 
+    let col = d3.scale.linear()
+        .domain([0, quadtree.max_depth])
+        .range(['green', 'red']);
+
     node.enter().append("rect")
         //
         .attr("x", function (d) {
-            return transformXY(proj, d.x + d.width, d.y).x;
+            // return transformXY(proj, d.x + d.width, d.y).x;
+            return transformXY(proj, d.x, d.y).x;
         })
         .attr("y", function (d) {
-            return transformXY(proj, d.x + d.width, d.y).y;
+            // return transformXY(proj, d.x + d.width, d.y).y;
+            return transformXY(proj, d.x2, d.y2).y;
         })
         .attr("width", function (d) {
-            let tl = transformXY(proj, d.x + d.width, d.y);
-            let br = transformXY(proj, d.x, d.y + d.height);
-            return Math.abs(br.x - tl.x);
+            // let tl = transformXY(proj, d.x + d.width, d.y);
+            // let br = transformXY(proj, d.x, d.y + d.height);
+
+            let p1 = transformXY(proj, d.x, d.y);
+            let p2 = transformXY(proj, d.x2, d.y2);
+
+            return p2.x - p1.x;
         })
         .attr("height", function (d) {
-            let tl = transformXY(proj, d.x + d.width, d.y);
-            let br = transformXY(proj, d.x, d.y + d.height);
-            return Math.abs(br.y - tl.y);
+            // let tl = transformXY(proj, d.x + d.width, d.y);
+            // let br = transformXY(proj, d.x, d.y + d.height);
+            let p1 = transformXY(proj, d.x, d.y);
+            let p2 = transformXY(proj, d.x2, d.y2);
+            return p1.y - p2.y;
         })
-        .style("stroke-opacity", 0.1)
+        .style("stroke-opacity", .5)
         .style("position", "absolute")
         .attr('fill-opacity', function (d) {
-            return (d.depth / quadtree.max_depth) / 2;
+            return 0.5;
+            // return (d.depth / quadtree.max_depth);
         })
+        .style("fill", (d) => d.is_leaf ? col(d.depth) : "none")
         .attr("class", function (d) {
-            if (d.is_leaf) {
+            if (!(d.pts == null) || d.is_leaf) {
                 return "node full_node";
             }
             else {
@@ -156,10 +162,10 @@ function redraw_qt(svg, qt, proj, points) {
         .selectAll(".node")
         .data(qt)
         .attr("x", function (d) {
-            return transformXY(proj, d.x + d.width, d.y).x;
+            return transformXY(proj, d.x, d.y).x;
         })
         .attr("y", function (d) {
-            return transformXY(proj, d.x + d.width, d.y).y;
+            return transformXY(proj, d.x2, d.y2).y;
         });
 
     d3.select(svg)
@@ -183,13 +189,17 @@ function nodes(quadtree) {
         for (let i=0; i<4; i++) {
             if (node.nodes[i]) node.nodes[i].depth = node.depth+1;
         }
-        if (x1 == 0){ return; }
+        if (np) {
+            console.log(np);
+        }
         nodes.push({
             x: x1,
             y: y1,
-            width: x2 - x1,
-            height: y2 - y1,
-            area: ((y2 - y1) * (x2 - x1)),
+            x2: x2,
+            y2: y2,
+            // width: x2 - x1,
+            // height: y2 - y1,
+            // area: ((y2 - y1) * (x2 - x1)),
             pts: np,
             node_no: node_cnt,
             is_leaf: node.leaf,
