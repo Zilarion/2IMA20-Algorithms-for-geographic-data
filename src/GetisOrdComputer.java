@@ -21,7 +21,7 @@ public class GetisOrdComputer implements TripListener {
     // Date format
     private SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
     private double lonDelta, latDelta, timeDelta;
-    private int xSize = 50, ySize = 50, zSize = 50;
+    private int xSize = 200, ySize = 200, zSize = 200;
 
     GetisOrdComputer() {
         // Define bounds of the data
