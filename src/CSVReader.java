@@ -37,7 +37,7 @@ public class CSVReader {
                 String[] data = line.split(cvsSplitBy);
                 broadcast(new Trip(data));
                 trips++;
-                if (tripCount <= trips) {
+                if (tripCount != -1 && tripCount <= trips) {
                     done();
                     return;
                 }

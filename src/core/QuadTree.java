@@ -55,6 +55,10 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
         return TreePrinter.getString(this);
     }
 
+    public String toJson() {
+        return TreePrinter.getJson(this);
+    }
+
     /**
      * A PR (Point Region) Quadtree is a four-way search trie. This means that each node has either
      * four (internal guide node) or zero (leaf node) children. Keys are only stored in the leaf nodes,
@@ -110,7 +114,7 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
          */
         public PointRegionQuadTree(double x, double y, double width, double height, int leafCapacity, int maxTreeHeight) {
             XYPoint xyPoint = new XYPoint(x,y);
-            AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(xyPoint,width,height);
+            AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(xyPoint,width,height, 0);
             PointRegionQuadNode.maxCapacity = leafCapacity;
             PointRegionQuadNode.maxHeight = maxTreeHeight;
             root = new PointRegionQuadNode<P>(aabb);
@@ -240,22 +244,22 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
                 double h = aabb.height/2d;
                 double w = aabb.width/2d;
 
-                AxisAlignedBoundingBox aabbNW = new AxisAlignedBoundingBox(aabb,w,h);
+                AxisAlignedBoundingBox aabbNW = new AxisAlignedBoundingBox(aabb,w,h, aabb.level + 1);
                 northWest = new PointRegionQuadNode<XY>(aabbNW);
                 ((PointRegionQuadNode<XY>)northWest).height = height+1;
 
                 XYPoint xyNE = new XYPoint(aabb.x+w,aabb.y);
-                AxisAlignedBoundingBox aabbNE = new AxisAlignedBoundingBox(xyNE,w,h);
+                AxisAlignedBoundingBox aabbNE = new AxisAlignedBoundingBox(xyNE,w,h, aabb.level + 1);
                 northEast = new PointRegionQuadNode<XY>(aabbNE);
                 ((PointRegionQuadNode<XY>)northEast).height = height+1;
 
                 XYPoint xySW = new XYPoint(aabb.x,aabb.y+h);
-                AxisAlignedBoundingBox aabbSW = new AxisAlignedBoundingBox(xySW,w,h);
+                AxisAlignedBoundingBox aabbSW = new AxisAlignedBoundingBox(xySW,w,h, aabb.level + 1);
                 southWest = new PointRegionQuadNode<XY>(aabbSW);
                 ((PointRegionQuadNode<XY>)southWest).height = height+1;
 
                 XYPoint xySE = new XYPoint(aabb.x+w,aabb.y+h);
-                AxisAlignedBoundingBox aabbSE = new AxisAlignedBoundingBox(xySE,w,h);
+                AxisAlignedBoundingBox aabbSE = new AxisAlignedBoundingBox(xySE,w,h, aabb.level + 1);
                 southEast = new PointRegionQuadNode<XY>(aabbSE);
                 ((PointRegionQuadNode<XY>)southEast).height = height+1;
 
@@ -535,6 +539,7 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
 
         private double height = 0;
         private double width = 0;
+        private int level = 0;
 
         private double minX = 0;
         private double minY = 0;
@@ -543,7 +548,7 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
 
         public AxisAlignedBoundingBox() { }
 
-        public AxisAlignedBoundingBox(XYPoint upperLeft, double width, double height) {
+        public AxisAlignedBoundingBox(XYPoint upperLeft, double width, double height, int level) {
             super(upperLeft.x, upperLeft.y);
             this.width = width;
             this.height = height;
@@ -552,6 +557,7 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
             minY = upperLeft.y;
             maxX = upperLeft.x+width;
             maxY = upperLeft.y+height;
+            this.level = level;
         }
 
         public void set(XYPoint upperLeft, double width, double height) {
@@ -563,6 +569,7 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
             minY = upperLeft.y;
             maxX = upperLeft.x+width;
             maxY = upperLeft.y+height;
+            this.level = level;
         }
 
         public double getHeight() {
@@ -739,16 +746,27 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
 
         public static <T extends XYPoint> String getJson(QuadTree<T> tree) {
             if (tree.getRoot() == null) return "Tree has no nodes.";
-            return getJson(tree.getRoot(), "", true);
+            return "[" + getJson(tree.getRoot(), true) + "]";
         }
 
-        private static <T extends XYPoint> String getJson(QuadNode<T> node, String prefix, boolean isTail) {
+        private static <T extends XYPoint> String nodeJson(QuadNode<T> node) {
+            return "{\"x1\": " + node.aabb.minX +
+                    ", \"y1\": " + node.aabb.minY +
+                    ", \"x2\": " + node.aabb.maxX +
+                    ", \"y2\": " + node.aabb.maxY +
+                    ", \"depth\":" + node.aabb.level +
+                    "}";
+        }
+
+        private static <T extends XYPoint> String getJson(QuadNode<T> node, boolean isFirst) {
             StringBuilder builder = new StringBuilder();
 
-            builder.append(prefix + (isTail ? "{" : "├── ") + " node={" + node.toString() + "}\n");
+            builder.append((isFirst ? "" : ",\n") + nodeJson(node));
             List<QuadNode<T>> children = null;
+
+
             if (node.northWest != null || node.northEast != null || node.southWest != null || node.southEast != null) {
-                children = new ArrayList<QuadNode<T>>(4);
+                children = new ArrayList<>(4);
                 if (node.northWest != null) children.add(node.northWest);
                 if (node.northEast != null) children.add(node.northEast);
                 if (node.southWest != null) children.add(node.southWest);
@@ -756,10 +774,10 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
             }
             if (children != null) {
                 for (int i = 0; i < children.size() - 1; i++) {
-                    builder.append(getString(children.get(i), prefix + (isTail ? "    " : "│   "), false));
+                    builder.append(getJson(children.get(i), false));
                 }
                 if (children.size() >= 1) {
-                    builder.append(getString(children.get(children.size() - 1), prefix + (isTail ? "    " : "│   "), true));
+                    builder.append(getJson(children.get(children.size() - 1), false));
                 }
             }
 
