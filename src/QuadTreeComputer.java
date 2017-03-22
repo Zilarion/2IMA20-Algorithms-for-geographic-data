@@ -18,7 +18,7 @@ public class QuadTreeComputer implements TripListener {
     private int count = 0;
 
     QuadTreeComputer() {
-        quad = new QuadTree.PointRegionQuadTree(latMin, lonMin, latMax-latMin, lonMax-lonMin, 150, 10000);
+        quad = new QuadTree.PointRegionQuadTree(latMin, lonMin, latMax-latMin, lonMax-lonMin, 50, 10000);
         locations = new ArrayList<>();
     }
 

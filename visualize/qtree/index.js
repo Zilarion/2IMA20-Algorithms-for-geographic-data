@@ -32,7 +32,14 @@ window.initMap = function() {
 
             const bounds = this.map.getBounds();
             const proj = this.getProjection();
-            this.quadtree = data;
+
+            this.quadtree = {};
+            data.forEach((d) => {
+                if (!this.quadtree[d.depth]) {
+                    this.quadtree[d.depth] = [];
+                }
+                this.quadtree[d.depth].push(d);
+            });
 
             paintCanvas(this.canvas, this.quadtree, proj, bounds);
 
@@ -72,6 +79,11 @@ window.initMap = function() {
 };
 
 function timeoutDraw(ctx) {
+    // Resize canvas to screen size
+    ctx.canvas
+        .attr("width", ctx.canvas.node().offsetWidth)
+        .attr("height", ctx.canvas.node().offsetHeight);
+
     // Get projection and map bounds
     const proj = ctx.getProjection();
     const bounds = ctx.map.getBounds();
@@ -83,15 +95,10 @@ function timeoutDraw(ctx) {
 
     return setTimeout(function() {
         paintCanvas(ctx.canvas, ctx.quadtree, proj, bounds);
-    }, 250)
+    }, 50)
 }
 
 function paintCanvas(canvas, data, proj, bounds) {
-    // Resize canvas to screen size
-    canvas
-        .attr("width", canvas.node().offsetWidth)
-        .attr("height", canvas.node().offsetHeight);
-
     // get the canvas drawing context and the width and height
     const context = canvas.node().getContext('2d');
     let cWidth = canvas.node().width;
@@ -99,26 +106,31 @@ function paintCanvas(canvas, data, proj, bounds) {
 
     // clear the canvas from previous drawing
     context.clearRect(0, 0, cWidth, cHeight);
-
     // Draw all rects
-    data.forEach((d) => {
-        // if (bounds.contains(transformXY(proj, d.x1, d.y1)) ||
-        //     bounds.contains(transformXY(proj, d.x2, d.y1)) ||
-        //     bounds.contains(transformXY(proj, d.x1, d.y2)) ||
-        //     bounds.contains(transformXY(proj, d.x2, d.y2))) {
-        //     return;
-        // }
-        if (d.depth < 8) { return ;}
-        const p1 = transformXY(proj, d.x1, d.y1);
-        const p2 = transformXY(proj, d.x2, d.y2);
+    for (const level in data) {
+        if (data.hasOwnProperty(level)) {
+            if (level > 6 && level < 12) {
+                const quads = data[level];
+                quads.forEach((d) => {
+                    if (bounds.contains(new google.maps.LatLng(d.x1, d.y1)) ||
+                        bounds.contains(new google.maps.LatLng(d.x2, d.y1)) ||
+                        bounds.contains(new google.maps.LatLng(d.x1, d.y2)) ||
+                        bounds.contains(new google.maps.LatLng(d.x2, d.y2))
+                    ) {
+                        const p1 = transformXY(proj, d.x1, d.y1);
+                        const p2 = transformXY(proj, d.x2, d.y2);
 
-        // console.log(p1.x, p2.y, (p2.x - p1.x), (p1.y-p2.y));
-        context.beginPath();
-        context.rect(p1.x, p2.y, p2.x - p1.x, p1.y - p2.y);
-        context.fillStyle = "rgba(255, 0, 0, 0.1)";
-        context.fill();
-        context.closePath();
-    });
+                        context.beginPath();
+                        context.rect(p1.x, p2.y, p2.x - p1.x, p1.y - p2.y);
+                        context.fillStyle = "rgba(255, 0, 0, " + d.depth / 60 + ")";
+                        context.fill();
+                        context.closePath();
+                    }
+                });
+            }
+        }
+    }
+
 }
 
 
