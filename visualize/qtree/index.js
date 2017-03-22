@@ -21,8 +21,6 @@ window.initMap = function() {
         SVGOverlay.prototype.onAdd = function () {
             let base = d3.select("#vis");
             this.canvas = base.append("canvas")
-                .attr("width", "1920")
-                .attr("height", "1080")
                 .style("position", "absolute")
                 .style("top", 0)
                 .style("left", 0)
@@ -34,22 +32,26 @@ window.initMap = function() {
             const proj = this.getProjection();
 
             this.quadtree = {};
+            let maxLevel = 0
             data.forEach((d) => {
                 if (!this.quadtree[d.depth]) {
                     this.quadtree[d.depth] = [];
+                    if (d.depth > maxLevel) {
+                        maxLevel = d.depth;
+                    }
                 }
                 this.quadtree[d.depth].push(d);
             });
-
-            paintCanvas(this.canvas, this.quadtree, proj, bounds);
-
-            this.onPan();
+            this.quadtree.maxLevel = maxLevel;
             this.map.addListener('center_changed', this.onPan);
         };
 
         SVGOverlay.prototype.onPan = function () {
             if (this.panTimeout) {
                 clearTimeout(this.panTimeout);
+            }
+            if (this.zoomTimeout) {
+                clearTimeout(this.zoomTimeout);
             }
             this.panTimeout = timeoutDraw(this)
         };
@@ -61,6 +63,9 @@ window.initMap = function() {
         };
 
         SVGOverlay.prototype.draw = function () {
+            if (this.panTimeout) {
+                clearTimeout(this.panTimeout);
+            }
             if (this.zoomTimeout) {
                 clearTimeout(this.zoomTimeout);
             }
@@ -87,6 +92,7 @@ function timeoutDraw(ctx) {
     // Get projection and map bounds
     const proj = ctx.getProjection();
     const bounds = ctx.map.getBounds();
+    const zoom = ctx.map.getZoom();
 
     // clear the canvas from previous drawing
     let cWidth = ctx.canvas.node().width;
@@ -94,11 +100,11 @@ function timeoutDraw(ctx) {
     ctx.canvas.node().getContext('2d').clearRect(0, 0, cWidth, cHeight);
 
     return setTimeout(function() {
-        paintCanvas(ctx.canvas, ctx.quadtree, proj, bounds);
+        paintCanvas(ctx.canvas, ctx.quadtree, proj, bounds, zoom);
     }, 50)
 }
 
-function paintCanvas(canvas, data, proj, bounds) {
+function paintCanvas(canvas, data, proj, bounds, zoom) {
     // get the canvas drawing context and the width and height
     const context = canvas.node().getContext('2d');
     let cWidth = canvas.node().width;
@@ -106,11 +112,14 @@ function paintCanvas(canvas, data, proj, bounds) {
 
     // clear the canvas from previous drawing
     context.clearRect(0, 0, cWidth, cHeight);
+
     // Draw all rects
     for (const level in data) {
         if (data.hasOwnProperty(level)) {
-            if (level > 6 && level < 12) {
+            if (level < zoom) {
                 const quads = data[level];
+                context.fillStyle = "rgba(0, 0, 0, " + (0.2 * level / data.maxLevel) + ")";
+                context.beginPath();
                 quads.forEach((d) => {
                     if (bounds.contains(new google.maps.LatLng(d.x1, d.y1)) ||
                         bounds.contains(new google.maps.LatLng(d.x2, d.y1)) ||
@@ -120,13 +129,10 @@ function paintCanvas(canvas, data, proj, bounds) {
                         const p1 = transformXY(proj, d.x1, d.y1);
                         const p2 = transformXY(proj, d.x2, d.y2);
 
-                        context.beginPath();
-                        context.rect(p1.x, p2.y, p2.x - p1.x, p1.y - p2.y);
-                        context.fillStyle = "rgba(255, 0, 0, " + d.depth / 60 + ")";
-                        context.fill();
-                        context.closePath();
+                        context.rect(Math.ceil(p1.x), Math.ceil(p2.y), Math.ceil(p2.x - p1.x), Math.ceil(p1.y - p2.y));
                     }
                 });
+                context.fill();
             }
         }
     }
