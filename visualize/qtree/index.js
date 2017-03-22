@@ -50,7 +50,6 @@ window.initMap = function() {
         };
 
         SVGOverlay.prototype.onPan = function () {
-            console.log("pan");
             let proj = this.getProjection();
             redraw_qt(this.svg, this.qt, proj, this.points);
         };
@@ -62,7 +61,6 @@ window.initMap = function() {
         };
 
         SVGOverlay.prototype.draw = function () {
-            console.log('draw');
             let proj = this.getProjection();
             this.qt = generate_quadtree_map(this.svg, this.points, proj);
         };
@@ -83,8 +81,6 @@ function transformXY(proj, x, y) {
 }
 
 function generate_quadtree_map(svg, pt_arr, proj) {
-    console.log(svg);
-
     quadtree = d3.geom.quadtree(pt_arr);
 
     const this_quadtree = nodes(quadtree);
@@ -92,16 +88,16 @@ function generate_quadtree_map(svg, pt_arr, proj) {
     d3.select(svg)
         .selectAll("*").remove();
 
-    let points = d3.select(svg)
-        .selectAll(".point")
-        .data(pt_arr);
-
-    points.enter().append("circle")
-        .attr("cx", (d) => transformXY(proj, d.x, d.y).x)
-        .attr("cy", (d) => transformXY(proj, d.x, d.y).y)
-        .attr("r", 2)
-        .attr("opacity", 0.5)
-        .attr("class", "point");
+    // let points = d3.select(svg)
+    //     .selectAll(".point")
+    //     .data(pt_arr);
+    //
+    // points.enter().append("circle")
+    //     .attr("cx", (d) => transformXY(proj, d.x, d.y).x)
+    //     .attr("cy", (d) => transformXY(proj, d.x, d.y).y)
+    //     .attr("r", 2)
+    //     .attr("opacity", 0.5)
+    //     .attr("class", "point");
 
     let node = d3.select(svg)
         .selectAll(".node")
@@ -114,44 +110,30 @@ function generate_quadtree_map(svg, pt_arr, proj) {
     node.enter().append("rect")
         //
         .attr("x", function (d) {
-            // return transformXY(proj, d.x + d.width, d.y).x;
             return transformXY(proj, d.x, d.y).x;
         })
         .attr("y", function (d) {
-            // return transformXY(proj, d.x + d.width, d.y).y;
             return transformXY(proj, d.x2, d.y2).y;
         })
         .attr("width", function (d) {
-            // let tl = transformXY(proj, d.x + d.width, d.y);
-            // let br = transformXY(proj, d.x, d.y + d.height);
-
             let p1 = transformXY(proj, d.x, d.y);
             let p2 = transformXY(proj, d.x2, d.y2);
 
             return p2.x - p1.x;
         })
         .attr("height", function (d) {
-            // let tl = transformXY(proj, d.x + d.width, d.y);
-            // let br = transformXY(proj, d.x, d.y + d.height);
             let p1 = transformXY(proj, d.x, d.y);
             let p2 = transformXY(proj, d.x2, d.y2);
             return p1.y - p2.y;
         })
-        .style("stroke-opacity", .5)
         .style("position", "absolute")
         .attr('fill-opacity', function (d) {
-            return 0.5;
-            // return (d.depth / quadtree.max_depth);
+            // return 0.3;
+            return (d.depth / quadtree.max_depth);
         })
-        .style("fill", (d) => d.is_leaf ? col(d.depth) : "none")
-        .attr("class", function (d) {
-            if (!(d.pts == null) || d.is_leaf) {
-                return "node full_node";
-            }
-            else {
-                return "node empty_node";
-            }
-        });
+        // .style("fill", (d) => (d.pts || d.is_leaf) ? col(d.depth) : "none")
+        .style("fill", (d) => col(d.depth))
+        .attr("class", "node");
     node.exit().remove();
 
     return this_quadtree;
@@ -168,11 +150,11 @@ function redraw_qt(svg, qt, proj, points) {
             return transformXY(proj, d.x2, d.y2).y;
         });
 
-    d3.select(svg)
-        .selectAll(".point")
-        .data(points)
-        .attr("cx", (d) => transformXY(proj, d.x, d.y).x)
-        .attr("cy", (d) => transformXY(proj, d.x, d.y).y)
+    // d3.select(svg)
+    //     .selectAll(".point")
+    //     .data(points)
+    //     .attr("cx", (d) => transformXY(proj, d.x, d.y).x)
+    //     .attr("cy", (d) => transformXY(proj, d.x, d.y).y)
 }
 
 // Collapse the quadtree into an array of rectangles.
@@ -188,9 +170,6 @@ function nodes(quadtree) {
         const np = node.point;
         for (let i=0; i<4; i++) {
             if (node.nodes[i]) node.nodes[i].depth = node.depth+1;
-        }
-        if (np) {
-            console.log(np);
         }
         nodes.push({
             x: x1,
