@@ -27,7 +27,7 @@ d3.json("results.json", function(error, data) {
         d3.selectAll(".gridOverlay").remove();
         const layer = d3.select(this.getPanes().overlayLayer).append("div")
             .attr("class", "gridOverlay");
-
+        console.log(layer)
         const projection = this.getProjection();
         const gridSize = 50;
         const deltaLat = (40.5 - 40.9) / gridSize;
@@ -65,10 +65,7 @@ d3.json("results.json", function(error, data) {
             .attr(
                 {
                     "class": "tile",
-                    "fill": "none",
-                    "shape-rendering": "crispEdges",
-                    "stroke": "black",
-                    "stroke-width": "1px"
+                    "fill": "none"
                 })
             .each(transformTile);
 
@@ -94,24 +91,25 @@ d3.json("results.json", function(error, data) {
             topLeft = projection.fromLatLngToDivPixel(topLeft);
             bottomRight = projection.fromLatLngToDivPixel(bottomRight);
 
-            const text = d3.select(this)
-                .append("text")
-                .text(d.value)
-                .style("fill", "white")
-                .style("opacity", 0.6)
-                .attr({
-                    "x": "50%",
-                    "y": "50%",
-                    "alignment-baseline": "middle",
-                    "text-anchor": "middle"
-                });
+            // const text = d3.select(this)
+            //     .append("text")
+            //     .text(d.value.toFixed(2))
+            //     .style("fill", "white")
+            //     .style("opacity", 0.6)
+            //     .style("font-size", 7)
+            //     .attr({
+            //         "x": "50%",
+            //         "y": "50%",
+            //         "alignment-baseline": "middle",
+            //         "text-anchor": "middle"
+            //     });
 
             return d3.select(this)
                 .style("left", (topLeft.x) + "px")
                 .style("top", (topLeft.y) + "px")
                 .style("width", (bottomRight.x - topLeft.x) + "px")
                 .style("height", (bottomRight.y - topLeft.y) + "px")
-                .style("opacity", 0.3)
+                .style("opacity", 0.6)
                 .style("background-color", color(d.value));
         }
     };

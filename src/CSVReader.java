@@ -9,14 +9,22 @@ public class CSVReader {
     static ArrayList<TripListener> listeners = new ArrayList<>();
 
     public static void parse(String csvFile, TripListener listener) {
+        parse(csvFile, listener, -1);
+    }
+    public static void parse(String csvFile, TripListener listener, int tripCount) {
         listen(listener);
-        parse(csvFile);
+        parse(csvFile, tripCount);
     }
 
     public static void parse(String csvFile) {
+        parse(csvFile, -1);
+    }
+
+    public static void parse(String csvFile, int tripCount) {
         String line = "";
         String cvsSplitBy = ",";
         boolean firstLine = true;
+        int trips = 0;
 
         try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
             while ((line = br.readLine()) != null) {
@@ -28,6 +36,11 @@ public class CSVReader {
                 // Split this line of data
                 String[] data = line.split(cvsSplitBy);
                 broadcast(new Trip(data));
+                trips++;
+                if (tripCount <= trips) {
+                    done();
+                    return;
+                }
             }
 
         } catch (IOException e) {

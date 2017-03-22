@@ -95,13 +95,10 @@ public class GetisOrdComputer implements TripListener {
     public void done() {
         // Computing getis ord
         System.out.println("Computing Getis-Ord statistic");
-        double[] G = new double[xSize*ySize*zSize];
-        double max = 0;
-        double min = 10000000;
+        double max = -5000000, min = 1000000000;
 
         double sumXj = 0;
         double sumXj2 = 0;
-        double sumWijXj = 0;
         int sumWij = 27;
         int sumWij2 = 27;
         int n = (xSize * ySize * zSize);
@@ -117,10 +114,11 @@ public class GetisOrdComputer implements TripListener {
         double xbar = sumXj/n;
         double S = Math.sqrt(sumXj2/n - xbar * xbar);
 
-
         for (int x = 0; x < xSize; x++) {
             for (int y = 0; y < ySize; y++) {
                 for (int z = 0; z < zSize; z++) {
+                    double sumWijXj = 0;
+
                     // calculate sumwij2
                     sumWijXj = 0;
                     for (int xp = Math.max(0, x-1); xp < Math.min(xSize, x+1); xp++) {
@@ -134,15 +132,16 @@ public class GetisOrdComputer implements TripListener {
                     double above = sumWijXj - xbar * sumWij;
                     double below = S * Math.sqrt( (n * sumWij2 - sumWij*sumWij ) / (n-1) );
 
-                    int index = x + xSize * y + (xSize * ySize) * z;
                     stc.get(x, y, z).g = above / below;
+                    if (above/below > max) {
+                        max = above/below;
+                    } else if (above/below < min) {
+                        min = above/below;
+                    }
                 }
             }
         }
-
-//        System.out.println("min: " + min);
-//        System.out.println("max: " + max);
-//        System.out.println("Writing results...");
+        System.out.println("max: " + max + " , min: " + min);
         writeJson();
     }
 
