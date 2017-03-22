@@ -41,9 +41,10 @@ window.initMap = function() {
         };
 
         SVGOverlay.prototype.onPan = function () {
-            const proj = this.getProjection();
-            const bounds = this.map.getBounds();
-            paintCanvas(this.canvas, this.quadtree, proj, bounds);
+            if (this.panTimeout) {
+                clearTimeout(this.panTimeout);
+            }
+            this.panTimeout = timeoutDraw(this)
         };
 
         SVGOverlay.prototype.onRemove = function () {
@@ -53,9 +54,10 @@ window.initMap = function() {
         };
 
         SVGOverlay.prototype.draw = function () {
-            const proj = this.getProjection();
-            const bounds = this.map.getBounds();
-            paintCanvas(this.canvas, this.quadtree, proj, bounds);
+            if (this.zoomTimeout) {
+                clearTimeout(this.zoomTimeout);
+            }
+            this.zoomTimeout = timeoutDraw(this)
         };
 
         // Create the Google Map…
@@ -68,6 +70,21 @@ window.initMap = function() {
         let overlay = new SVGOverlay(map);
     });
 };
+
+function timeoutDraw(ctx) {
+    // Get projection and map bounds
+    const proj = ctx.getProjection();
+    const bounds = ctx.map.getBounds();
+
+    // clear the canvas from previous drawing
+    let cWidth = ctx.canvas.node().width;
+    let cHeight = ctx.canvas.node().height;
+    ctx.canvas.node().getContext('2d').clearRect(0, 0, cWidth, cHeight);
+
+    return setTimeout(function() {
+        paintCanvas(ctx.canvas, ctx.quadtree, proj, bounds);
+    }, 250)
+}
 
 function paintCanvas(canvas, data, proj, bounds) {
     // Resize canvas to screen size
