@@ -2,9 +2,6 @@
 // Top left: [40,9, -74.25]
 // Bottom right: [40.5, -73.7]
 
-
-let quadtree;
-
 window.initMap = function() {
     d3.json("qtree.json", function (error, data) {
         if (error) throw error;
@@ -35,7 +32,7 @@ window.initMap = function() {
             const proj = this.getProjection();
             this.quadtree = data;
 
-            this.qt = generate_quadtree_map(this.map, this.svg, this.points, proj);
+            generate_quadtree_map(this.svg, this.quadtree, proj);
 
             this.onPan();
             document.body.appendChild(this.svg);
@@ -44,8 +41,7 @@ window.initMap = function() {
 
         SVGOverlay.prototype.onPan = function () {
             let proj = this.getProjection();
-			this.qt = generate_quadtree_map(this.map, this.svg, this.points, proj);
-            redraw_qt(this.svg, this.qt, proj, this.points);
+            redraw_qt(this.svg, this.quadtree, proj);
         };
 
         SVGOverlay.prototype.onRemove = function () {
@@ -56,7 +52,7 @@ window.initMap = function() {
 
         SVGOverlay.prototype.draw = function () {
             let proj = this.getProjection();
-            this.qt = generate_quadtree_map(this.map, this.svg, this.points, proj);
+            generate_quadtree_map(this.svg, this.quadtree, proj);
         };
 
         // Create the Google Map…
@@ -74,23 +70,7 @@ function transformXY(proj, x, y) {
     return proj.fromLatLngToContainerPixel(new google.maps.LatLng(x, y));
 }
 
-function generate_quadtree_map(map, svg, pt_arr, proj) {
-    quadtree = d3.geom.quadtree(pt_arr);
-	
-	const bounds = map.getBounds();
-	const quads = [];
-	nodes(quadtree).forEach(function(n) {
-		if (bounds.getSouthWest().lng() <= n.y &&
-			bounds.getNorthEast().lng() >= n.y &&
-			bounds.getSouthWest().lat() <= n.x &&
-			bounds.getNorthEast().lat() >= n.x &&
-			n.depth >= 0.6*quadtree.max_depth) {
-				quads.push(n);
-			}
-	});
-
-    const this_quadtree = quads;
-
+function generate_quadtree_map(svg, quadtree_nodes, proj) {
     d3.select(svg)
         .selectAll("*").remove();
 
@@ -103,7 +83,7 @@ function generate_quadtree_map(map, svg, pt_arr, proj) {
         .range(['green', 'red']);
 
     node.enter().append("rect")
-        //
+    //
         .attr("x", function (d) {
             return transformXY(proj, d.x1, d.y1).x;
         })
@@ -123,8 +103,7 @@ function generate_quadtree_map(map, svg, pt_arr, proj) {
         })
         .style("position", "absolute")
         .attr('fill-opacity', function (d) {
-            // return 0.3;
-			return (d.depth / quadtree.max_depth);
+            return (d.depth / 50);
         })
         .style("fill", (d) => col(d.depth))
         .attr("class", "node");
