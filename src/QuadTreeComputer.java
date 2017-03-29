@@ -20,7 +20,7 @@ public class QuadTreeComputer implements TripListener {
     private int count = 0;
 
     QuadTreeComputer() {
-        quad = new QuadTree.PointRegionQuadTree(latMin, lonMin, latMax-latMin, lonMax-lonMin, 10, 10000);
+        quad = new QuadTree.PointRegionQuadTree(latMin, lonMin, latMax-latMin, lonMax-lonMin, 50, 10000);
         locations = new ArrayList<>();
     }
 
@@ -28,7 +28,7 @@ public class QuadTreeComputer implements TripListener {
     public void newTrip(Trip t) {
         count++;
         if (count % 100000 == 0) {
-            System.out.println("Processed: " + count + " trips");
+//            System.out.println("Processed: " + count + " trips");
         }
         if (t.pickup_location.latitude() == 0 || t.pickup_location.longitude() == 0
                 || t.dropoff_location.latitude() == 0 || t.dropoff_location.longitude() == 0) {
@@ -43,7 +43,7 @@ public class QuadTreeComputer implements TripListener {
 
     @Override
     public void done() {
-        ArrayList<ArrayList<QuadTree.QuadNode>> hotspots = findHotspots(50);
+        ArrayList<ArrayList<QuadTree.QuadNode>> hotspots = findHotspots(500);
         writeHotspots(hotspots);
     }
 
@@ -52,10 +52,10 @@ public class QuadTreeComputer implements TripListener {
         int hotspotCount = 0;
         ArrayList<ArrayList<QuadTree.QuadNode>> hotspots = new ArrayList<>();
 
-        while (hotspotCount < count || level < 0) {
+        while (hotspotCount < count && level >= 0) {
             ArrayList<QuadTree.QuadNode> levelNodes = new ArrayList<>();
             getNodes(quad.getRoot(), levelNodes, level);
-            System.out.println("On level " + level + " we have " + levelNodes.size() + " nodes");
+//            System.out.println("On level " + level + " we have " + levelNodes.size() + " nodes");
             ArrayList<ArrayList<QuadTree.QuadNode>> levelHotspots = new ArrayList<>();
 
             // Find list of potential hotspots
@@ -82,12 +82,12 @@ public class QuadTreeComputer implements TripListener {
             for (int i = 0; i < levelHotspots.size() && hotspotCount < count; i++) {
                 hotspots.add(levelHotspots.get(i));
 
-                System.out.println("Added hotspot at level " + level + " of size " + levelHotspots.get(i).size());
+//                System.out.println("Added hotspot at level " + level + " of size " + levelHotspots.get(i).size());
                 // Increase hotspot count
                 hotspotCount++;
             }
 
-            System.out.println(hotspotCount + " / " + count + " @ level: " + level);
+//            System.out.println(hotspotCount + " / " + count + " @ level: " + level);
             level--;
         }
 
@@ -126,7 +126,7 @@ public class QuadTreeComputer implements TripListener {
         }
         for (int i = 0; i < children.size(); i++) {
             QuadTree.QuadNode childNode = children.get(i);
-            if (childNode.aabb.level == level) {
+            if (childNode.aabb.level == level && childNode.isLeaf()) {
                 result.add(childNode);
             } else {
                 getNodes(childNode, result, level);

@@ -164,14 +164,14 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
             return pointsInRange;
         }
 
-        protected static class PointRegionQuadNode<XY extends QuadTree.XYPoint> extends QuadNode<XY> {
+        public static class PointRegionQuadNode<XY extends QuadTree.XYPoint> extends QuadNode<XY> {
 
             // max number of children before sub-dividing
             protected static int maxCapacity = 0;
             // max height of the tree (will over-ride maxCapacity when height==maxHeight)
             protected static int maxHeight = 0;
 
-            protected List<XY> points = new LinkedList<XY>();
+            public List<XY> points = new LinkedList<XY>();
             protected int height = 1;
 
             protected PointRegionQuadNode(AxisAlignedBoundingBox aabb, PointRegionQuadNode<XY> parent) {
@@ -416,7 +416,7 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
          * Is current node a leaf node.
          * @return True if node is a leaf node.
          */
-        protected boolean isLeaf() {
+        public boolean isLeaf() {
             return (northWest==null && northEast==null && southWest==null && southEast==null);
         }
 

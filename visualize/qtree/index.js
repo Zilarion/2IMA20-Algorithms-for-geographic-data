@@ -2,8 +2,13 @@
 // Top left: [40,9, -74.25]
 // Bottom right: [40.5, -73.7]
 
+
+const select = document.getElementById("select");
+
 window.initMap = function() {
-    d3.json("qtree.json", function (error, data) {
+    console.log(select.value);
+    d3.select("#vis canvas").remove("*");
+    d3.json(select.value + ".json", function (error, data) {
         if (error) throw error;
         var google = window.google;
         function SVGOverlay (map) {
@@ -74,8 +79,8 @@ window.initMap = function() {
 
         // Create the Google Map…
         const map = new google.maps.Map(d3.select("#map").node(), {
-            zoom: 11,
-            center: new google.maps.LatLng(40.7, -73.975),
+            zoom: 13,
+            center: new google.maps.LatLng(40.75, -73.975),
             mapTypeId: google.maps.MapTypeId.TERRAIN
         });
 

@@ -10,12 +10,29 @@
         padding: 0;
     }
 
-    .node {
-        /*shape-rendering: crispEdges;*/
+    #input {
+        position: absolute;
+        top: 10px;
+        left: 120px;
+    }
+
+    #input select {
+        width: 100px;
+        height: 30px;
     }
 </style>
 <div id="map"></div>
 <div id="vis"></div>
+<div id="input">
+    <select id="select"  onchange="initMap()">
+        <option value="5khs-1mtrip-50lc">5khs</option>
+        <option value="1khs-1mtrip-50lc">1khs</option>
+        <option value="500hs-1mtrip-50lc">500hs</option>
+        <option value="50hs-1mtrip-1000lc">50hs 1000lc</option>
+        <option value="50hs-1mtrips-80lc">50hs 80lc</option>
+        <option value="50hs-1mtrips-10lc">50hs 10lc</option>
+    </select>
+</div>
 <script src="https://d3js.org/d3.v3.min.js"></script>
 <script src="index.js"></script>
 <script src="https://maps.google.com/maps/api/js?sensor=true&callback=initMap"></script>
