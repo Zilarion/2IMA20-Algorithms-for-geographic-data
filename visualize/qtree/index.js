@@ -37,16 +37,21 @@ window.initMap = function() {
             const proj = this.getProjection();
 
             this.quadtree = {};
-            let maxLevel = 0
+            let maxLevel = 0;
+            let minLevel = 10000;
             data.forEach((d) => {
                 if (!this.quadtree[d.depth]) {
                     this.quadtree[d.depth] = [];
                     if (d.depth > maxLevel) {
                         maxLevel = d.depth;
                     }
+                    if (d.depth < minLevel) {
+                        minLevel = d.depth;
+                    }
                 }
                 this.quadtree[d.depth].push(d);
             });
+            this.quadtree.minLevel = minLevel;
             this.quadtree.maxLevel = maxLevel;
             this.map.addListener('center_changed', this.onPan);
         };
@@ -120,12 +125,18 @@ function paintCanvas(canvas, data, proj, bounds, zoom) {
     context.fillStyle = "rgba(0,0,200, 0.1)";
     context.fillRect(0, 0, cWidth, cHeight);
 
+    let color = d3.scale.linear().domain([0,
+        data.minLevel,
+        (data.maxLevel - data.minLevel) / 2 + data.minLevel,
+        data.maxLevel]).range(["blue","green", "yellow", "red"]);
+
     // Draw all rects
     for (const level in data) {
         if (data.hasOwnProperty(level)) {
             if (level != "maxLevel") {
                 const quads = data[level];
-                context.fillStyle = "rgba(183,28,28, " + (0.8 * (level / data.maxLevel) * (level / data.maxLevel)) + ")";
+                let cl = d3.rgb(color(level));
+                context.fillStyle = "rgba(" + cl.r + "," + cl.g + "," + cl.b + "," + (Math.pow((level / data.maxLevel), 4)) + ")";
                 context.beginPath();
                 quads.forEach((d) => {
                     if (bounds.contains(new google.maps.LatLng(d.x1, d.y1)) ||
@@ -140,6 +151,11 @@ function paintCanvas(canvas, data, proj, bounds, zoom) {
                     }
                 });
                 context.fill();
+                if (zoom > level) {
+                    context.lineWidth = 0.1;
+                    context.strokeStyle = "rgba(0,0,0,0.2)";
+                    context.stroke();
+                }
             }
         }
     }

@@ -20,7 +20,7 @@ public class QuadTreeComputer implements TripListener {
     private int count = 0;
 
     QuadTreeComputer() {
-        quad = new QuadTree.PointRegionQuadTree(latMin, lonMin, latMax-latMin, lonMax-lonMin, 50, 10000);
+        quad = new QuadTree.PointRegionQuadTree(latMin, lonMin, latMax-latMin, lonMax-lonMin, 1000, 10000);
         locations = new ArrayList<>();
     }
 
@@ -43,7 +43,7 @@ public class QuadTreeComputer implements TripListener {
 
     @Override
     public void done() {
-        ArrayList<ArrayList<QuadTree.QuadNode>> hotspots = findHotspots(500);
+        ArrayList<ArrayList<QuadTree.QuadNode>> hotspots = findHotspots(50);
         writeHotspots(hotspots);
     }
 
