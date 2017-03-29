@@ -42,6 +42,7 @@ d3.json("results.json", function(error, data) {
             }
         }
 		
+		//var hotspots = grid;
 		var hotspots = getTopN(grid, "value", 500);
 
         layer.selectAll(".border")
