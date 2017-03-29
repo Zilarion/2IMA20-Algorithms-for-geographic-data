@@ -10,9 +10,11 @@ const map = new google.maps.Map(d3.select("#map").node(), {
 
 const overlay = new google.maps.OverlayView();
 const select = document.getElementById("timeselect");
+const topLeftX = 40.9;
+const topLeftY = -74.25;
+const bottomRightX = 40.5;
+const bottomRightY = -73.7;
 
-// Top left: [40,9, -74.25]
-// Bottom right: [40.5, -73.7]
 d3.json("results.json", function(error, data) {
     if (error) throw error;
 
@@ -27,21 +29,23 @@ d3.json("results.json", function(error, data) {
         d3.selectAll(".gridOverlay").remove();
         const layer = d3.select(this.getPanes().overlayLayer).append("div")
             .attr("class", "gridOverlay");
-        console.log(layer)
-        const projection = this.getProjection();
-        const gridSize = 50;
-        const deltaLat = (40.5 - 40.9) / gridSize;
-        const deltaLon = (-73.7 - -74.25) / gridSize;
 
+        const projection = this.getProjection();
+        const gridSize = 200;
+        const deltaLat = (bottomRightX - topLeftX) / gridSize;
+        const deltaLon = (bottomRightY - topLeftY) / gridSize;
+		
         let grid = [];
         for (let i = 0; i < gridSize; i++) {
             for (let j = 0; j < gridSize; j++) {
-                grid.push({lat: 40.9 + deltaLat * i, lon: -74.25 + deltaLon * j, value: value[j + i * gridSize]});
+                grid.push({lat: topLeftX + deltaLat * i, lon: topLeftY + deltaLon * j, value: value[j + i * gridSize]});
             }
         }
+		
+		var hotspots = getTopN(grid, "value", 500);
 
         layer.selectAll(".border")
-            .data([{lat: 40.9, lon: -74.25}])
+            .data([{lat: topLeftX, lon: topLeftY}])
             .each(transformBorder)
             .enter()
             .append("rect")
@@ -54,7 +58,7 @@ d3.json("results.json", function(error, data) {
             }).each(transformBorder);
 
         const tile = layer.selectAll("svg")
-            .data(grid)
+            .data(hotspots)
 
         tile.enter()
             .append("svg")
@@ -65,9 +69,22 @@ d3.json("results.json", function(error, data) {
             .attr(
                 {
                     "class": "tile",
-                    "fill": "none"
+                    "fill": "none",
+                    "shape-rendering": "crispEdges",
+                    "stroke": "black",
+                    "stroke-width": "1px"
                 })
             .each(transformTile);
+			
+		function getTopN(arr, prop, n) {
+			var clone = arr.slice(0);
+			clone.sort(function(x, y) {
+				if (x[prop] == y[prop]) return 0;
+				else if (parseInt(x[prop]) < parseInt(y[prop])) return 1;
+				else return -1;
+			});
+			return clone.slice(0, n || 1);
+		}
 
         function transformBorder(d) {
             let topLeft = new google.maps.LatLng(d.lat, d.lon);
@@ -84,25 +101,14 @@ d3.json("results.json", function(error, data) {
         }
 
         function transformTile(d) {
-            let color = d3.scale.linear().domain([-3,0, 8]).range(["green", "grey", "red"]);
+            let color = d3.scale.linear().domain([-1, 1,5, 40]).range(["blue", "green", "yellow", "red"]);
             let topLeft = new google.maps.LatLng(d.lat, d.lon);
             let bottomRight = new google.maps.LatLng(d.lat + deltaLat, d.lon + deltaLon);
 
             topLeft = projection.fromLatLngToDivPixel(topLeft);
             bottomRight = projection.fromLatLngToDivPixel(bottomRight);
 
-            // const text = d3.select(this)
-            //     .append("text")
-            //     .text(d.value.toFixed(2))
-            //     .style("fill", "white")
-            //     .style("opacity", 0.6)
-            //     .style("font-size", 7)
-            //     .attr({
-            //         "x": "50%",
-            //         "y": "50%",
-            //         "alignment-baseline": "middle",
-            //         "text-anchor": "middle"
-            //     });
+            
 
             return d3.select(this)
                 .style("left", (topLeft.x) + "px")
