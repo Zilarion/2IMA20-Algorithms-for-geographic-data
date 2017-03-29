@@ -70,6 +70,7 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
 
         private static final XYPoint XY_POINT = new XYPoint();
         private static final AxisAlignedBoundingBox RANGE = new AxisAlignedBoundingBox();
+        public static int currentHeight = 0;
 
         private PointRegionQuadNode<P> root = null;
 
@@ -117,7 +118,7 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
             AxisAlignedBoundingBox aabb = new AxisAlignedBoundingBox(xyPoint,width,height, 0);
             PointRegionQuadNode.maxCapacity = leafCapacity;
             PointRegionQuadNode.maxHeight = maxTreeHeight;
-            root = new PointRegionQuadNode<P>(aabb);
+            root = new PointRegionQuadNode<P>(aabb, null);
         }
 
         /**
@@ -173,8 +174,8 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
             protected List<XY> points = new LinkedList<XY>();
             protected int height = 1;
 
-            protected PointRegionQuadNode(AxisAlignedBoundingBox aabb) {
-                super(aabb);
+            protected PointRegionQuadNode(AxisAlignedBoundingBox aabb, PointRegionQuadNode<XY> parent) {
+                super(aabb, parent);
             }
 
             /**
@@ -196,8 +197,10 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
                 }
 
                 // Otherwise, we need to subdivide then add the point to whichever node will accept it
-                if (isLeaf() && height<maxHeight)
+                if (isLeaf() && height<maxHeight) {
+                    currentHeight = aabb.level + 1 > currentHeight ? aabb.level + 1 : currentHeight;
                     subdivide();
+                }
                 return insertIntoChildren(p);
             }
 
@@ -245,22 +248,22 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
                 double w = aabb.width/2d;
 
                 AxisAlignedBoundingBox aabbNW = new AxisAlignedBoundingBox(aabb,w,h, aabb.level + 1);
-                northWest = new PointRegionQuadNode<XY>(aabbNW);
+                northWest = new PointRegionQuadNode<XY>(aabbNW, this);
                 ((PointRegionQuadNode<XY>)northWest).height = height+1;
 
                 XYPoint xyNE = new XYPoint(aabb.x+w,aabb.y);
                 AxisAlignedBoundingBox aabbNE = new AxisAlignedBoundingBox(xyNE,w,h, aabb.level + 1);
-                northEast = new PointRegionQuadNode<XY>(aabbNE);
+                northEast = new PointRegionQuadNode<XY>(aabbNE, this);
                 ((PointRegionQuadNode<XY>)northEast).height = height+1;
 
                 XYPoint xySW = new XYPoint(aabb.x,aabb.y+h);
                 AxisAlignedBoundingBox aabbSW = new AxisAlignedBoundingBox(xySW,w,h, aabb.level + 1);
-                southWest = new PointRegionQuadNode<XY>(aabbSW);
+                southWest = new PointRegionQuadNode<XY>(aabbSW, this);
                 ((PointRegionQuadNode<XY>)southWest).height = height+1;
 
                 XYPoint xySE = new XYPoint(aabb.x+w,aabb.y+h);
                 AxisAlignedBoundingBox aabbSE = new AxisAlignedBoundingBox(xySE,w,h, aabb.level + 1);
-                southEast = new PointRegionQuadNode<XY>(aabbSE);
+                southEast = new PointRegionQuadNode<XY>(aabbSE, this);
                 ((PointRegionQuadNode<XY>)southEast).height = height+1;
 
                 // points live in leaf nodes, so distribute
@@ -355,17 +358,27 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
         }
     }
 
-    protected static abstract class QuadNode<G extends QuadTree.XYPoint> implements Comparable<QuadNode<G>> {
+    public static abstract class QuadNode<G extends QuadTree.XYPoint> implements Comparable<QuadNode<G>> {
 
-        protected final AxisAlignedBoundingBox aabb;
+        public final AxisAlignedBoundingBox aabb;
 
-        protected QuadNode<G> northWest = null;
-        protected QuadNode<G> northEast = null;
-        protected QuadNode<G> southWest = null;
-        protected QuadNode<G> southEast = null;
+        enum Loc {
+            NW, NE, SW, SE
+        };
 
-        protected QuadNode(AxisAlignedBoundingBox aabb) {
+        enum Dir {
+            N, E, S, W
+        }
+
+        public QuadNode<G> northWest = null;
+        public QuadNode<G> northEast = null;
+        public QuadNode<G> southWest = null;
+        public QuadNode<G> southEast = null;
+        protected QuadNode<G> parent = null;
+
+        protected QuadNode(AxisAlignedBoundingBox aabb, QuadNode<G> parent) {
             this.aabb = aabb;
+            this.parent = parent;
         }
 
         /**
@@ -405,6 +418,135 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
          */
         protected boolean isLeaf() {
             return (northWest==null && northEast==null && southWest==null && southEast==null);
+        }
+
+        /**
+         * Find the north neighbor
+         * @return The north neighboring node if it exists, null otherwise
+         */
+        public QuadNode<G> northNeighbor() {
+            if(parent == null) {
+                return null;
+            }
+
+            Loc thisLoc = location();
+
+            QuadNode<G> pi = parent;
+
+            if (thisLoc == Loc.SW) {
+                return pi.northWest;
+            } else if (thisLoc == Loc.SE) {
+                return pi.northEast;
+            }
+
+            QuadNode<G> mu = pi.northNeighbor();
+            if ( mu == null || mu.isLeaf()) {
+                return mu;
+            } else {
+                if (thisLoc == Loc.NW) {
+                    return mu.southWest;
+                } else if (thisLoc == Loc.NE) {
+                    return mu.southEast;
+                }
+            }
+            return null;
+        }
+
+        public QuadNode<G> eastNeighbor() {
+            if(parent == null) {
+                return null;
+            }
+
+            Loc thisLoc = location();
+
+            QuadNode<G> pi = parent;
+
+            if (thisLoc == Loc.SW) {
+                return pi.southEast;
+            } else if (thisLoc == Loc.NW) {
+                return pi.northEast;
+            }
+
+            QuadNode<G> mu = pi.eastNeighbor();
+            if ( mu == null || mu.isLeaf()) {
+                return mu;
+            } else {
+                if (thisLoc == Loc.SE) {
+                    return mu.southWest;
+                } else if (thisLoc == Loc.NE) {
+                    return mu.northWest;
+                }
+            }
+            return null;
+        }
+
+        public QuadNode<G> southNeighbor() {
+            if(parent == null) {
+                return null;
+            }
+
+            Loc thisLoc = location();
+
+            QuadNode<G> pi = parent;
+
+            if (thisLoc == Loc.NW) {
+                return pi.southWest;
+            } else if (thisLoc == Loc.NE) {
+                return pi.southEast;
+            }
+
+            QuadNode<G> mu = pi.southNeighbor();
+            if ( mu == null || mu.isLeaf()) {
+                return mu;
+            } else {
+                if (thisLoc == Loc.SW) {
+                    return mu.northWest;
+                } else if (thisLoc == Loc.SE) {
+                    return mu.northEast;
+                }
+            }
+            return null;
+        }
+
+        public QuadNode<G> westNeighbor() {
+            if(parent == null) {
+                return null;
+            }
+
+            Loc thisLoc = location();
+
+            QuadNode<G> pi = parent;
+
+            if (thisLoc == Loc.NE) {
+                return pi.northWest;
+            } else if (thisLoc == Loc.SE) {
+                return pi.southWest;
+            }
+
+            QuadNode<G> mu = pi.westNeighbor();
+            if ( mu == null || mu.isLeaf()) {
+                return mu;
+            } else {
+                if (thisLoc == Loc.NW) {
+                    return mu.northEast;
+                } else if (thisLoc == Loc.SW) {
+                    return mu.southEast;
+                }
+            }
+            return null;
+        }
+
+        private Loc location() {
+            if (this.equals(parent.northEast)) {
+                return Loc.NE;
+            } else if (this.equals(parent.northWest)) {
+                return Loc.NW;
+            } else if (this.equals(parent.southEast)) {
+                return Loc.SE;
+            } else if (this.equals(parent.southWest)) {
+                return Loc.SW;
+            }
+            return null;
         }
 
         /**
@@ -539,7 +681,7 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
 
         private double height = 0;
         private double width = 0;
-        private int level = 0;
+        public int level = 0;
 
         private double minX = 0;
         private double minY = 0;
@@ -569,7 +711,6 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
             minY = upperLeft.y;
             maxX = upperLeft.x+width;
             maxY = upperLeft.y+height;
-            this.level = level;
         }
 
         public double getHeight() {
@@ -678,6 +819,19 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
             builder.append("height").append("=").append(height).append(", ");
             builder.append("width").append("=").append(width);
             builder.append(")");
+            return builder.toString();
+        }
+
+        public String toJsonString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("{");
+            builder.append("\"x1\"").append(":").append(minX).append(", ");
+            builder.append("\"y1\"").append(":").append(minY).append(", ");
+            builder.append("\"x2\"").append(":").append(maxX).append(", ");
+            builder.append("\"y2\"").append(":").append(maxY).append(", ");
+            builder.append("\"depth\"").append(":").append(level);
+            builder.append("}");
+
             return builder.toString();
         }
     }
