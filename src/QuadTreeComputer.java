@@ -43,7 +43,7 @@ public class QuadTreeComputer implements TripListener {
 
     @Override
     public void done() {
-        ArrayList<ArrayList<QuadTree.QuadNode>> hotspots = findHotspots(50);
+        ArrayList<ArrayList<QuadTree.QuadNode>> hotspots = findHotspots(1);
         writeHotspots(hotspots);
     }
 

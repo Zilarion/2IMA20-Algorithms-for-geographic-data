@@ -536,6 +536,7 @@ public abstract class QuadTree<G extends QuadTree.XYPoint> {
             return null;
         }
 
+
         private Loc location() {
             if (this.equals(parent.northEast)) {
                 return Loc.NE;

@@ -84,8 +84,8 @@ window.initMap = function() {
 
         // Create the Google Map…
         const map = new google.maps.Map(d3.select("#map").node(), {
-            zoom: 13,
-            center: new google.maps.LatLng(40.75, -73.975),
+            zoom: 16,
+            center: new google.maps.LatLng(40.75, -73.99),
             mapTypeId: google.maps.MapTypeId.TERRAIN
         });
 
